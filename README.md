@@ -68,6 +68,38 @@ python manage.py migrate
 
 python manage.py createsuperuser
 
+## Movie Model and Serializer
+
+api/models.py
+
+```
+class Pelicula(models.Model):
+    titulo = models.CharField(max_length=150)
+    estreno = models.IntegerField(default=2000)
+    imagen = models.URLField(help_text="De imdb mismo")
+    resumen = models.TextField(help_text="Descripción corta")
+class Meta:
+    ordering = ['titulo']
+```
+
+api/serializer.py
+
+```
+from .models import Pelicula
+from rest_framework import serializers
+
+class PeliculaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pelicula
+        # fields = ['id', 'titulo', 'imagen', 'estreno', 'resumen']
+        fields = '__all__'
+```
+
+
+
+
+
+
 
 # Comments
 
