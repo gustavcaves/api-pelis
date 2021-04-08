@@ -95,6 +95,62 @@ class PeliculaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 ```
 
+## ViewSet and Url
+
+api/views.py
+
+```
+from .models import Pelicula
+from .serializers import PeliculaSerializer
+from rest_framework import viewsets
+
+class PeliculaViewSet(viewsets.ModelViewSet):
+    queryset = Pelicula.objects.all()
+    serializer_class = PeliculaSerializer
+```
+
+api_pelis/urls.py
+
+```
+from django.contrib import admin
+from django.urls import path, include
+
+from api import views
+from rest_framework import routers
+router = routers.DefaultRouter()
+
+# En el router vamos añadiendo los endpoints a los viewsets
+router.register('peliculas', views.PeliculaViewSet)
+
+urlpatterns = [
+    path('api/v1/', include(router.urls)),
+    path('admin/', admin.site.urls),
+]
+```
+
+api_pelis/settings.py
+
+```
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+ ],
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
