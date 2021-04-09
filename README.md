@@ -54,7 +54,7 @@ Original Requirements:
 * [X] markdown==3.0.1
 * [X] django-filter==2.1.0
 
-# Documentation Web Playground
+# Documentation Api Pelis
 
 ## Creating The Project
 
