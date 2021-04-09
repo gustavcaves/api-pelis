@@ -14,7 +14,7 @@ In this repositoy I will be getting the documentation of the proyect web playgor
   - git add .
   - git commit -m "first commit"
   - git branch -M main
-  - git remote add origin https://github.com/gustavcaves/web_playground_project.git
+  - git remote add origin https://github.com/gustavcaves/api-pelis.git
   - git push -u origin main
 - **Luego para seguir actualizando:**
 
@@ -139,16 +139,50 @@ REST_FRAMEWORK = {
 ```
 
 
+## Install Dependencies
+
+La autenticación con token es un sistema ideal para usar en webs asíncronas. El token es un identificador único de la sesión de un usuario que sirve como credenciales de acceso a la API. Si el cliente envía este token en sus peticiones (que generaremos cuando se registra), ésta buscará si tiene los permisos necesarios para acceder a las acciones protegidas.
 
 
+Desarrollar esta funcionalidad es tedioso, pero por suerte en DRF tenemos una serie de apps que nos harán la vida mucho más fácil, sólo tenemos que configurarlas adecuadamente y en pocos minutos tendremos un sistema de autenticación básico funcionando.
 
+pip install django-rest-auth==0.9.3
+pip install django-allauth==0.38.0
 
+apli_pelis/settings.py
 
+`    'django.contrib.sites',`
 
+```
+    'rest_framework.authtoken',
+    'rest_auth',
+    'rest_auth.registration',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+```
 
+```
+SITE_ID = 1
 
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_REQUIRED = False
 
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend"
+)
+```
 
+api_pelis/settings.py
+
+```
+    path('api/v1/auth/', include('rest_auth.urls')),
+    path('api/v1/auth/registration/', include('rest_auth.registration.urls')),
+```
 
 
 
