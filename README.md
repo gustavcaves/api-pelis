@@ -380,8 +380,55 @@ evil."}}]
 ```
 ````
 
+## Top Favorites Movies
 
+Ésta podría bien ser la parte más compleja del proyecto, pues tenemos que encontrar una forma de contar el número de favoritos de cada película y devolver la lista de películas ordenadas a partir de ese campo.
 
+Lo que vamos a hacer es crear un nuevo campo en la película que almacene el número de favoritos. Este campo lo actualizaremos automáticamente al crearse o borrarse una instancia de PeliculaFavorita.
+
+api/models.py
+
+`    favoritos = models.IntegerField(default=0)`
+
+```
+from django.db.models.signals import post_save, post_delete
+
+def update_favoritos(sender, instance, **kwargs):
+    count = instance.pelicula.peliculafavorita_set.all().count()
+    instance.pelicula.favoritos = count
+    instance.pelicula.save()
+
+# en el post delete se pasa la copia de la instance que ya no existe
+post_save.connect(update_favoritos, sender=PeliculaFavorita)
+post_delete.connect(update_favoritos, sender=PeliculaFavorita)
+```
+
+Migramos los cambios:
+
+````python
+(py392_apipelis) C:\www_dj\api_pelis>python manage.py makemigrations api
+Migrations for 'api':
+  api\migrations\0003_pelicula_favoritos.py
+    - Add field favoritos to pelicula
+
+(py392_apipelis) C:\www_dj\api_pelis>python manage.py migrate api
+Operations to perform:
+  Apply all migrations: api
+Running migrations:
+  Applying api.0003_pelicula_favoritos... OK
+```
+````
+
+Como utilizamos el campo all en el serializador se supone que ya nos devolverá automáticamente este nuevo campo.
+
+Y ya lo tenemos, el detalle maestro lo pondremos añadiendo un par de filtros de ordenamiento y búsqueda al ViewSet de películas que DRF maneja automáticamente. Así permitiremos ordenar las películas por número de favoritos y realizar búsquedas a partir del título:
+
+Ahora desde la interfaz web de DRF podemos filtrar y ordenar las películas.
+Con esto hemos acabado la primera parte.
+
+http://127.0.0.1:8000/api/v1/peliculas/
+
+Ok...
 
 
 
