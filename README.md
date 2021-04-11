@@ -264,7 +264,86 @@ Running migrations:
 ```
 ````
 
+## View Favorite Movie
 
+
+**Aclaración**
+
+En realidad las peticiones para crear recursos sin un identificador previo son de tipo POST, mientras que las de tipo PUT se usan para crear/reemplazar las que ya existen a partir de un identificador. En otras palabras, no es no se pueda usar PUT, pero al no tener un identificador explícito es mejor utilizar POST.
+
+**Vista**
+
+La vista para manejar una película favorita se basa en definir un método de petición, que en nuestro caso será el PUT.
+
+En él detectaremos una id de película que pasaremos como parámetro para recuperar la película que queremos marcar como favorita.
+
+Una vez la tengamos recuperada crearemos la relación PeliculaFavorita, y si ya existe la borraremos haciendo lo contrario:
+
+api/views.py
+
+`from .models import Pelicula, PeliculaFavorita`
+
+`from .serializers import PeliculaSerializer, PeliculaFavoritaSerializer`
+
+```
+from django.shortcuts import get_object_or_404
+
+from rest_framework import viewsets, views
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+```
+
+```
+class MarcarPeliculaFavorita(views.APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    # POST -> Se usa para crear un recurso sin un identificador
+    # PUT -> Se usa para crear/reemplazar un recurso con un identificador
+    def post(self, request):
+        pelicula = get_object_or_404(Pelicula, id=self.request.data.get('id', 0))
+        favorita, created = PeliculaFavorita.objects.get_or_create(pelicula=pelicula, usuario=request.user)
+    # Por defecto suponemos que se crea bien
+        content = {
+            'id': pelicula.id,
+            'favorita': True
+        }
+    # Si no se ha creado es que ya existe, entonces borramos el favorito
+        if not created:
+            favorita.delete()
+            content['favorita'] = False
+        return Response(content)
+```
+
+Haciendo uso de una APIView genérica configuraremos el sistema de autenticación y de permisos de la vista para que sea accesible sólo a usuarios autenticados vía token.
+
+Ya en la respuesta devolveremos una estructura JSON usando la clase Response de DRF.
+
+El nuevo path para acceder a la view quedará así:
+
+api_pelis/urls.py
+
+`    path('api/v1/favorita/', views.MarcarPeliculaFavorita.as_view()),`
+
+Una vez configurada, si accedemos a la URL veremos como indica explícitamente la autenticación con token para tener acceso a ella.
+
+Antes de probar si podemos añadir películas favoritas a través de cURL vamos a crear algunas películas. Normalmente añadiríamos una configuración parael adminitrador, pero ya que tenemos la interfaz de DRF nos la podemos ahorrar.
+
+Sólo tenemos que acceder al administrador con nuestro super usuario y luego crear las películas desde la interfaz de DRF.
+
+Para crear una petición PUT con cURL hay que estructurarla de la siguiente forma, pasando el token del usuario que marcará una película en las cabeceras:
+
+curl -X POST http://127.0.0.1:8844/api/v1/favorita/ -H "Authorization: Token cf4d5307fe3f4b3cbd2aa403a971574e9a209c25" -d "id=1"
+
+Se supone que si todo es correcto nos devolverá el estado de la película:
+
+{"id":1,"favorita":true}
+
+¿Cómo podemos saber si realmente se creó? La forma fácil sería añadir a la base de datos. Usando DB Browser for SQLite es muy fácil abrir el fichero de la base de datos y analizar los datos de las tablas.
+
+Como hemos comprobado el registro existe, si volvemos a ejecutar la petición debería borrarla:
+
+{"id":1,"favorita":false}
 
 
 
