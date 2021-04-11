@@ -138,11 +138,9 @@ REST_FRAMEWORK = {
 }
 ```
 
-
 ## Install Dependencies
 
 La autenticación con token es un sistema ideal para usar en webs asíncronas. El token es un identificador único de la sesión de un usuario que sirve como credenciales de acceso a la API. Si el cliente envía este token en sus peticiones (que generaremos cuando se registra), ésta buscará si tiene los permisos necesarios para acceder a las acciones protegidas.
-
 
 Desarrollar esta funcionalidad es tedioso, pero por suerte en DRF tenemos una serie de apps que nos harán la vida mucho más fácil, sólo tenemos que configurarlas adecuadamente y en pocos minutos tendremos un sistema de autenticación básico funcionando.
 
@@ -184,8 +182,87 @@ api_pelis/settings.py
     path('api/v1/auth/registration/', include('rest_auth.registration.urls')),
 ```
 
+## Interacting with the API using cURL
+
+La API de Django nos proporciona la interfaz web, pero ¿cómo crearíamos un usuario o haríamos el login desde un cliente?
+Para hacer una prueba vamos a usar cURL, una biblioteca que permite hacer peticiones en un montón de protocolos. Normalmente viene instalada en los sistemas operativos, así que sólo tenemos que abrir la terminal para empezar a probar.
+Tanto el registro como el login manejan peticiones con métodos POST, podemos crearlas fácilmente.
+Para registrar un usuario lo haremos así (es muy importante usar doble comillas al pasar los argumentos):
+
+curl -X POST http://127.0.0.1:8844/api/v1/auth/registration/ -d "password1=TEST1234A&password2=TEST1234A&email=test2@test2.com"
+
+Y para hacer login y conseguir el token:
+
+curl -X POST http://127.0.0.1:8844/api/v1/auth/login/ -d "password=TEST1234A&email=test2@test2.com"
+
+La idea trabajando con clientes es crear estas peticiones y almacenar el token en el localStorage del navegador para más adelante pasarlos en las cabeceras de las peticiones que requieran autenticación.
+
+My result:
+
+````bash
+(py392_apipelis) C:\www_dj\api_pelis>curl -X POST http://127.0.0.1:8000/api/v1/auth/registration/ -d "password1=TEST1234A&password2=TEST1234A&email=test2@test2.com"
+{"key":"37d54c75d630c9262c8dd95d764f16a267ee10a1"}
+```
+````
+
+````bash
+(py392_apipelis) C:\www_dj\api_pelis>curl -X POST http://127.0.0.1:8000/api/v1/auth/login/ -d "password=TEST1234A&email=test2@test2.com" 
+{"key":"37d54c75d630c9262c8dd95d764f16a267ee10a1"}
+```
+````
+
+That´s Ok...
+
+## Model Favorite Movie
+
+El sistema de películas favoritas constará de dos vistas: una para marcar o desmarcar una película como favorita y otra que devolverá todas las películas favoritas del usuario.
+Obviamente ambas vistas serán de acceso protegido y requerirán pasar el token de autenticación en las cabeceras. Sin embargo, antes de ponernos con las vistas tenemos que crear el nuevo modelo que relacione las películas con los usuarios en forma de favorito:
+
+api/models.py
+
+`from django.contrib.auth.models import User`
+
+```
+class PeliculaFavorita(models.Model):
+    pelicula = models.ForeignKey(Pelicula, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+```
+
+Si esta relación entre una película y un usuario existe podremos entender que el usuario la tiene como favorita, y si la desmarca simplemente la borraremos de la base de datos.
+
+Ahora vamos a añadir el serializador del modelo que utilizaremos luego:
+
+```
+class PeliculaFavoritaSerializer(serializers.ModelSerializer):
+
+    pelicula = PeliculaSerializer()
+  
+    class Meta:
+        model = PeliculaFavorita
+        fields = ['pelicula']
+```
+
+El punto es que hacemos uso del otro serializador Pelicula dentro de PeliculaFavorita para conseguir que la API devuelva instancias anidadas, ya veréis como es muy útil.
+
+Por ahora lo dejamos así, vamos a migrar antes de continuar con la siguiente lección:
+
+````python
+(py392_apipelis) C:\www_dj\api_pelis>python manage.py makemigrations api
+Migrations for 'api':
+  api\migrations\0002_auto_20210411_1404.py
+    - Change Meta options on pelicula
+    - Create model PeliculaFavorita
+
+(py392_apipelis) C:\www_dj\api_pelis>python manage.py migrate api
+Operations to perform:
+  Apply all migrations: api
+Running migrations:
+  Applying api.0002_auto_20210411_1404... OK
 
 
+
+```
+````
 
 
 
