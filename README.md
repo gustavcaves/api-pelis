@@ -264,7 +264,7 @@ Running migrations:
 ```
 ````
 
-## View Favorite Movie
+## View Favorite Movie I
 
 
 **Aclaración**
@@ -333,7 +333,7 @@ Sólo tenemos que acceder al administrador con nuestro super usuario y luego cre
 
 Para crear una petición PUT con cURL hay que estructurarla de la siguiente forma, pasando el token del usuario que marcará una película en las cabeceras:
 
-curl -X POST http://127.0.0.1:8844/api/v1/favorita/ -H "Authorization: Token cf4d5307fe3f4b3cbd2aa403a971574e9a209c25" -d "id=1"
+curl -X POST http://127.0.0.1:8000/api/v1/favorita/ -H "Authorization: Token cf4d5307fe3f4b3cbd2aa403a971574e9a209c25" -d "id=1"
 
 Se supone que si todo es correcto nos devolverá el estado de la película:
 
@@ -344,6 +344,46 @@ Se supone que si todo es correcto nos devolverá el estado de la película:
 Como hemos comprobado el registro existe, si volvemos a ejecutar la petición debería borrarla:
 
 {"id":1,"favorita":false}
+
+
+## View Favorite Movie II
+
+Nuestra siguiente tarea es una vista que devuelva todas las películas favoritas del usuario. Por suerte gracias al serializador que creamos antes es muy fácil:
+
+api/views.py
+
+```
+class ListarPeliculasFavoritas(views.APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    # GET -> Se usa para hacer lecturas
+    def get(self, request):
+        peliculas_favoritas = PeliculaFavorita.objects.filter(usuario=request.user)
+        serializer = PeliculaFavoritaSerializer(peliculas_favoritas, many=True)
+        return Response(serializer.data)
+```
+
+api_pelis/urls.py
+
+`    path('api/v1/favoritas/', views.ListarPeliculasFavoritas.as_view()),`
+
+Se trata de una simple acción de tipo GET donde devolvemos la lista de películas favoritas serializadas. Para probar si funciona haremos lo propio con cURL:
+
+curl -X GET http://127.0.0.1:8000/api/v1/favoritas/ -H "Authorization: Token cf4d5307fe3f4b3cbd2aa403a971574e9a209c25"
+
+Esto debería devolvernos la lista con la información de todas las películas favoritas, gracias a lo dicho anteriormente de los modelos anidados:
+
+````python
+(py392_apipelis) C:\www_dj\api_pelis>curl -X GET http://127.0.0.1:8000/api/v1/favoritas/ -H "Authorization: Token cf4d5307fe3f4b3cbd2aa403a971574e9a209c25"    
+[{"pelicula":{"id":1,"titulo":"Iron Man","estreno":2008,"imagen":"https://m.media-amazon.com/images/M/MV5BMTczNTI2ODUwOF5BMl5BanBnXkFtZTcwMTU0NTIzMw@@._V1_UX182_CR0,0,182,268_AL_.jpg","resumen":"After being held captive in an Afghan cave, billionaire engineer Tony Stark creates a unique weaponized suit of armor to fight 
+evil."}}]
+```
+````
+
+
+
+
+
 
 
 
